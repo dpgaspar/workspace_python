@@ -1,5 +1,6 @@
 import stock as stk
 
+
 class DecisionLogEntry():
     def __init__(self, decision_type, poscell, total_value):
         self.decision_type = decision_type
