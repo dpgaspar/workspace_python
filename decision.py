@@ -103,27 +103,37 @@ class DecisionCell():
 
 class Decision():
     # target_data = ([Vs][Dates])
-    def __init__(self, target_name, target_data, decision_col):
+    def __init__(self, target_name, target_data, decision_col, risk_factor=1):
         self.calc = stk.StockCalc()
         self.indicators = []
         self.stop_indicator = ([],[])
         self.target_name = target_name
         self.target_data = target_data
         self.decision_col = decision_col
+        self.risk_factor = risk_factor
         self.__init_indicators__()
                 
     def __init_indicators__(self):
         pass
     
-    def enter_decision(self, i):
+    def enter_decision(self, i, col_indicator, stop_value):
         pass
     
-    def leave_decision(self, i):
+    def leave_decision(self, i, col_indicator, stop_value):
         pass
+    
+    def get_quantity_from_stop(self, value, stop_value):
+        return (self.decision_col.curr_value * self.risk_factor)/(value-stop_value)
     
     def get_value(self, i): return self.target_data[0][i]
     
     def get_date(self, i): return self.target_data[1][i]
+    
+    def get_stop_for_date(self, date):
+        try:
+            v = self.stop_indicator[1].index(date)
+            return v
+        except: return 0.0
     
     def get_indicator_for_date(self, date):
         retlst = []
@@ -139,14 +149,15 @@ class Decision():
         for i in range(0, len(self.target_data[0])-1):
             d = self.target_data[1][i]
             col_indicator = self.get_indicator_for_date(d)
+            stop = self.get_stop_for_date(d)
             if len(col_indicator) > 0:
                 if not on:
-                    decision = self.enter_decision(i, col_indicator)
+                    decision = self.enter_decision(i, col_indicator, stop)
                     if (decision.answer):
                         self.decision_col.enter(self.target_name, self.get_value(i), self.get_date(i), decision.quantity)
                         on = True
                 if on:
-                    decision = self.leave_decision(i, col_indicator)
+                    decision = self.leave_decision(i, col_indicator, stop)
                     if (decision.answer):
                         self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity)
                         on = False        
@@ -163,12 +174,28 @@ class DecisionSimpleSMA(Decision):
         self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), 200))
         self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), 40))
         
-    def enter_decision(self, i, col_indicator):
-        Decision.enter_decision(self, i)
+    def enter_decision(self, i, col_indicator, stop_value):
+        Decision.enter_decision(self, i, col_indicator, stop_value)
         return DecisionCell(col_indicator[0] > col_indicator[1], -1)
         
-    def leave_decision(self, i, col_indicator):
-        Decision.leave_decision(self, i)
+    def leave_decision(self, i, col_indicator, stop_value):
+        Decision.leave_decision(self, i, col_indicator, stop_value)
         return DecisionCell(col_indicator[0] < col_indicator[1], -1)
         
-    
+class DecisionSimpleStopSMA(Decision):
+    def __init__(self, target_name, target_data, decision_col):
+        Decision.__init__(self, target_name, target_data, decision_col)
+        
+    def __init_indicators__(self):
+        Decision.__init_indicators__(self)        
+        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), 50))
+        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), 200))
+        self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), 40))
+        
+    def enter_decision(self, i, col_indicator, stop_value):
+        Decision.enter_decision(self, i, col_indicator, stop_value)
+        return DecisionCell(col_indicator[0] > col_indicator[1], self.get_quantity_from_stop(self.get_value(i), stop_value))
+        
+    def leave_decision(self, i, col_indicator, stop_value):
+        Decision.leave_decision(self, i, col_indicator, stop_value)
+        return DecisionCell(col_indicator[0] < col_indicator[1], -1)
