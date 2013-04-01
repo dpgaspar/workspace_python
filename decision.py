@@ -11,11 +11,12 @@ class DecisionLogEntry():
         return "%s:%s: %f %d Quantity=%d" % (self.decision_type, self.poscell.name, self.poscell.value, self.poscell.date, self.quantity)
 
 class PositionCell():
-    def __init__(self, name, value, date, quantity):
+    def __init__(self, name, value, date, quantity, stop_value=0.0):
         self.name = name
         self.value = value
         self.date = date
         self.quantity = quantity
+        self.stop_value = stop_value
         
     def __eq__(self, other):
         if other == self.name: return True
