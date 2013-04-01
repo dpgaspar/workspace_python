@@ -131,7 +131,7 @@ class Decision():
     
     def get_stop_for_date(self, date):
         try:
-            v = self.stop_indicator[1].index(date)
+            v = self.stop_indicator[self.stop_indicator[1].index(date)]
             return v
         except: return 0.0
     
