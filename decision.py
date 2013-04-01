@@ -36,7 +36,7 @@ class DecisionCollection():
         self.positions = []
         self.decision_log = []
         
-    def enter(self, name, value, date, quantity):
+    def enter(self, name, value, date, quantity, stop_value=0.0):
         if quantity == -1: quantity = self.get_max_quantity(value)
         if value*quantity < self.curr_value:
             if name in self.positions:
@@ -44,9 +44,9 @@ class DecisionCollection():
                 position.value = (position.value*position.quantity) + (value*quantity)/(position.quantity + quantity) 
                 position.quantity = position.quantity + quantity
             else:
-                self.positions.append(PositionCell(name, value, date, quantity))
+                self.positions.append(PositionCell(name, value, date, quantity, stop_value))
             self.curr_value = self.curr_value - (value*quantity)
-            self.decision_log.append(DecisionLogEntry("ENTER", PositionCell(name, value, date, quantity), self.get_total_value()))
+            self.decision_log.append(DecisionLogEntry("ENTER", PositionCell(name, value, date, quantity, stop_value), self.get_total_value()))
             return True
         return False
         
@@ -60,7 +60,7 @@ class DecisionCollection():
                 position.value = (position.value*position.quantity) - (value*quantity)/(position.quantity - quantity) 
                 position.quantity = position.quantity - quantity
             self.curr_value = self.curr_value + (value*quantity)
-            self.decision_log.append(DecisionLogEntry("LEAVE", PositionCell(name, value, date, quantity), self.get_total_value()))            
+            self.decision_log.append(DecisionLogEntry("LEAVE", PositionCell(name, value, date, quantity, stop_value), self.get_total_value()))            
             return True
         else: return False
         
@@ -100,6 +100,7 @@ class DecisionCell():
     def __init__(self, decision=False, quantity=0):
         self.answer = decision
         self.quantity = quantity
+
 
 class Decision():
     # target_data = ([Vs][Dates])
@@ -154,25 +155,28 @@ class Decision():
                 if not on:
                     decision = self.enter_decision(i, col_indicator, stop)
                     if (decision.answer):
-                        self.decision_col.enter(self.target_name, self.get_value(i), self.get_date(i), decision.quantity)
+                        self.decision_col.enter(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
                         on = True
                 if on:
                     decision = self.leave_decision(i, col_indicator, stop)
                     if (decision.answer):
-                        self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity)
+                        self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
                         on = False        
                 
                                                         
    
 class DecisionSimpleSMA(Decision):
-    def __init__(self, target_name, target_data, decision_col):
+    def __init__(self, target_name, target_data, decision_col, sma_fast=50, sma_slow=200, stop_per=40):
+        self.sma_fast = sma_fast
+        self.sma_slow = sma_slow
+        self.stop_per = stop_per
         Decision.__init__(self, target_name, target_data, decision_col)
         
     def __init_indicators__(self):
         Decision.__init_indicators__(self)        
-        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), 50))
-        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), 200))
-        self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), 40))
+        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_fast))
+        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_slow))
+        self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), self.stop_per))
         
     def enter_decision(self, i, col_indicator, stop_value):
         Decision.enter_decision(self, i, col_indicator, stop_value)
@@ -182,15 +186,16 @@ class DecisionSimpleSMA(Decision):
         Decision.leave_decision(self, i, col_indicator, stop_value)
         return DecisionCell(col_indicator[0] < col_indicator[1], -1)
         
+        
 class DecisionSimpleStopSMA(Decision):
-    def __init__(self, target_name, target_data, decision_col):
+    def __init__(self, target_name, target_data, decision_col, sma_fast=50, sma_slow=200, stop_per=40):
         Decision.__init__(self, target_name, target_data, decision_col)
         
     def __init_indicators__(self):
         Decision.__init_indicators__(self)        
-        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), 50))
-        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), 200))
-        self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), 40))
+        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_fast))
+        self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_slow))
+        self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), self.stop_per))
         
     def enter_decision(self, i, col_indicator, stop_value):
         Decision.enter_decision(self, i, col_indicator, stop_value)
