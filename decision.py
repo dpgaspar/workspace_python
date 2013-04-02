@@ -1,6 +1,11 @@
 import stock as stk
 
-
+#-------------------------------------
+# Decision Log Entry
+#
+# Estrutura de Celula de dados
+# guarda um log das decisoes
+#-------------------------------------
 class DecisionLogEntry():
     def __init__(self, decision_type, poscell, total_value):
         self.decision_type = decision_type
@@ -10,6 +15,11 @@ class DecisionLogEntry():
     def __str__(self):
         return "%s:%s: %f %d Quantity=%d" % (self.decision_type, self.poscell.name, self.poscell.value, self.poscell.date, self.quantity)
 
+#-------------------------------------
+# Position Cell
+#
+# Estrutura de Celula de dados
+#-------------------------------------
 class PositionCell():
     def __init__(self, name, value, date, quantity, stop_value=0.0):
         self.name = name
@@ -28,6 +38,12 @@ class PositionCell():
     
     def __str__(self): return self.name + " V=" + str(self.value) + " D=" + str(self.date) + " Q=" + str(self.quantity)
 
+
+#-------------------------------------
+# Decision Collection
+#
+# Objecto tipo portfolio
+#-------------------------------------
 class DecisionCollection():
     def __init__(self, name, init_value):
         self.init_value = init_value
@@ -95,13 +111,21 @@ class DecisionCollection():
         return retstr
     
         
-        
+#-------------------------------------
+# Decision Cell
+#
+# Classe tipo celula de dados
+#-------------------------------------        
 class DecisionCell():
     def __init__(self, decision=False, quantity=0):
         self.answer = decision
         self.quantity = quantity
 
-
+#-------------------------------------
+# Decision 
+#
+# Classe tipo Interface
+#-------------------------------------
 class Decision():
     # target_data = ([Vs][Dates])
     def __init__(self, target_name, target_data, decision_col, risk_factor=1):
@@ -164,7 +188,11 @@ class Decision():
                         on = False        
                 
                                                         
-   
+#-------------------------------------
+# Decision Simple SMA
+#
+# Implementacao do Decision
+#-------------------------------------
 class DecisionSimpleSMA(Decision):
     def __init__(self, target_name, target_data, decision_col, sma_fast=50, sma_slow=200, stop_per=40):
         self.sma_fast = sma_fast
@@ -186,7 +214,11 @@ class DecisionSimpleSMA(Decision):
         Decision.leave_decision(self, i, col_indicator, stop_value)
         return DecisionCell(col_indicator[0] < col_indicator[1], -1)
         
-        
+#-------------------------------------
+# Decision Simple Stop SMA
+#
+# Implementacao do Decision
+#-------------------------------------        
 class DecisionSimpleStopSMA(Decision):
     def __init__(self, target_name, target_data, decision_col, sma_fast=50, sma_slow=200, stop_per=40):
         Decision.__init__(self, target_name, target_data, decision_col)
