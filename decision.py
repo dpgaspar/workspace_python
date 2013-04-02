@@ -66,7 +66,7 @@ class DecisionCollection():
             return True
         return False
         
-    def leave(self, name, value, date, quantity):
+    def leave(self, name, value, date, quantity, stop_value=0.0):
         if name in self.positions:
             position = self.positions[self.positions.index(name)]
             if (position.quantity == quantity) or (quantity == -1):
@@ -148,6 +148,7 @@ class Decision():
         pass
     
     def get_quantity_from_stop(self, value, stop_value):
+        print (self.decision_col.curr_value * self.risk_factor)/(value-stop_value)
         return (self.decision_col.curr_value * self.risk_factor)/(value-stop_value)
     
     def get_value(self, i): return self.target_data[0][i]
@@ -172,7 +173,7 @@ class Decision():
     def looper(self):
         on = False
         for i in range(0, len(self.target_data[0])-1):
-            d = self.target_data[1][i]
+            d = self.get_date(i)
             col_indicator = self.get_indicator_for_date(d)
             stop = self.get_stop_for_date(d)
             if len(col_indicator) > 0:
@@ -182,10 +183,14 @@ class Decision():
                         self.decision_col.enter(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
                         on = True
                 if on:
-                    decision = self.leave_decision(i, col_indicator, stop)
-                    if (decision.answer):
+                    if (self.get_value(i) < stop):
                         self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
-                        on = False        
+                        on = False
+                    else: 
+                        decision = self.leave_decision(i, col_indicator, stop)
+                        if (decision.answer):
+                            self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
+                            on = False        
                 
                                                         
 #-------------------------------------
@@ -221,6 +226,9 @@ class DecisionSimpleSMA(Decision):
 #-------------------------------------        
 class DecisionSimpleStopSMA(Decision):
     def __init__(self, target_name, target_data, decision_col, sma_fast=50, sma_slow=200, stop_per=40):
+        self.sma_fast = sma_fast
+        self.sma_slow = sma_slow
+        self.stop_per = stop_per        
         Decision.__init__(self, target_name, target_data, decision_col)
         
     def __init_indicators__(self):

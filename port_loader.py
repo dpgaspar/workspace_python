@@ -162,6 +162,11 @@ class CLI(cmd.Cmd):
         decision.looper()
         print ticker, ":", str(port)
     
+        port2 = des.DecisionCollection(ticker, 10000)
+        decision2 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port2)
+        decision2.looper()
+        print ticker, ":", str(port2)
+    
     
     
     def help_simulation(self):
