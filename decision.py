@@ -54,7 +54,7 @@ class DecisionCollection():
         
     def enter(self, name, value, date, quantity, stop_value=0.0):
         if quantity == -1: quantity = self.get_max_quantity(value)
-        if value*quantity < self.curr_value:
+        if value*quantity <= self.curr_value: 
             if name in self.positions:
                 position = self.positions[self.positions.index(name)]
                 position.value = (position.value*position.quantity) + (value*quantity)/(position.quantity + quantity) 
@@ -148,9 +148,9 @@ class Decision():
         pass
     
     def get_quantity_from_stop(self, value, stop_value):
-        quantity = round((self.decision_col.curr_value * self.risk_factor)/(value-stop_value),0)
+        quantity = int(round(((self.decision_col.curr_value * self.risk_factor)/(value-stop_value)),0))
         if (quantity*value > self.decision_col.curr_value): quantity = quantity -1
-        return (self.decision_col.curr_value * self.risk_factor)/(value-stop_value)
+        return quantity
     
     def get_value(self, i): return self.target_data[0][i]
     
@@ -226,11 +226,11 @@ class DecisionSimpleSMA(Decision):
 # Implementacao do Decision
 #-------------------------------------        
 class DecisionSimpleStopSMA(Decision):
-    def __init__(self, target_name, target_data, decision_col, sma_fast=50, sma_slow=200, stop_per=40):
+    def __init__(self, target_name, target_data, decision_col, risk_factor=1, sma_fast=50, sma_slow=200, stop_per=40):
         self.sma_fast = sma_fast
         self.sma_slow = sma_slow
         self.stop_per = stop_per        
-        Decision.__init__(self, target_name, target_data, decision_col)
+        Decision.__init__(self, target_name, target_data, decision_col, risk_factor)
         
     def __init_indicators__(self):
         Decision.__init_indicators__(self)        

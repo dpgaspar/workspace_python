@@ -142,33 +142,18 @@ class CLI(cmd.Cmd):
     def do_simulation(self, arg):
         ticker, startdate = arg.split()
         sd = stk.StockData()
-        calc = stk.StockCalc()
         sd.load(ticker, startdate)
-        
-        port = portf.PortfolioSimulator()
-        port.add_indicator( calc.sma((sd.Cs, sd.dates), 50))
-        port.add_indicator( calc.sma((sd.Cs, sd.dates), 200))
-                        
-        port.run(sd.history)
-        port.print_short_log()
-    
-    def do_simulation2(self, arg):
-        ticker, startdate = arg.split()
-        sd = stk.StockData()
-        sd.load(ticker, startdate)
-                
+
         port = des.DecisionCollection(ticker, 10000)
         decision = des.DecisionSimpleSMA(ticker, (sd.Cs, sd.dates), port)
         decision.looper()
         print ticker, ":", str(port)
     
         port2 = des.DecisionCollection(ticker, 10000)
-        decision2 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port2)
+        decision2 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port2, risk_factor=0.1)
         decision2.looper()
         print ticker, ":", str(port2)
-    
-    
-    
+        
     def help_simulation(self):
         print "syntax: simulation [ticker] []|[start date YYYYMMDD]",
         print "-- runs a simulation on a single ticker"
@@ -177,18 +162,14 @@ class CLI(cmd.Cmd):
     
         
     def do_simulation_collection(self, arg ):
-        
         for ticker in self.stk_data_coll.stk_data_coll:
             sd = stk.StockData()
-            sd.load_file(ticker, arg)
-            calc = stk.StockCalc()
-            
-            port = portf.PortfolioSimulator()
-            port.add_indicator( calc.sma((sd.Cs, sd.dates), 50))
-            port.add_indicator( calc.sma((sd.Cs, sd.dates), 200))
-            
-            port.run(sd.history)
-            print ticker + ":" + str(port)
+            sd.load(ticker, arg)
+
+            port = des.DecisionCollection(ticker, 10000)
+            decision = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port, risk_factor=0.1, sma_fast=10, sma_slow=30, stop_per=10)
+            decision.looper()
+            print ticker, ":", str(port)
         
     
          
