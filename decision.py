@@ -148,7 +148,8 @@ class Decision():
         pass
     
     def get_quantity_from_stop(self, value, stop_value):
-        print (self.decision_col.curr_value * self.risk_factor)/(value-stop_value)
+        quantity = round((self.decision_col.curr_value * self.risk_factor)/(value-stop_value),0)
+        if (quantity*value > self.decision_col.curr_value): quantity = quantity -1
         return (self.decision_col.curr_value * self.risk_factor)/(value-stop_value)
     
     def get_value(self, i): return self.target_data[0][i]
