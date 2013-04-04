@@ -158,19 +158,17 @@ class CLI(cmd.Cmd):
         print "syntax: simulation [ticker] []|[start date YYYYMMDD]",
         print "-- runs a simulation on a single ticker"
     
-    
-    
-        
+                
     def do_simulation_collection(self, arg ):
         for ticker in self.stk_data_coll.stk_data_coll:
             sd = stk.StockData()
             sd.load(ticker, arg)
 
             port = des.DecisionCollection(ticker, 10000)
-            decision = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port, risk_factor=0.1, sma_fast=10, sma_slow=30, stop_per=10)
+            decision = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port, risk_factor=0.1, sma_fast=10, sma_slow=50, stop_per=5)
             decision.looper()
             print ticker, ":", str(port)
-        
+                                
     
          
     def emptyline(self):

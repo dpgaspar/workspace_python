@@ -1,4 +1,6 @@
 import stock as stk
+import copy
+ 
 
 #-------------------------------------
 # Decision Log Entry
@@ -109,7 +111,33 @@ class DecisionCollection():
         if len(self.decision_log)>0:
             retstr = retstr + "YEAR_RATE=%f YEARS=%s " % (self.get_year_rate(),self.get_years())          
         return retstr
-    
+
+
+class DecisionCollectionStat():
+    def __init__(self):
+        self.decision_lst = []
+        
+    def add(self, decision):
+        self.decision_lst.append(decision_vol)
+        
+    def print_all(self):
+        for cell in self.decision_lst:
+            print cell.decision_col
+
+    def load_sd_col(self, data_col_tickers, decision, startdate):
+        for ticker in data_col_tickers:
+            sd = stk.StockData()
+            sd.load(ticker, startdate)
+            des = copy.deepcopy(decision)
+            des_col = DecisionCollection("PORTF", 10000)
+            des.decision.post_set(sd, des_col)
+            self.decision_lst.append(des)
+     
+    def loop_all():
+         for cell in self.decision_lst:
+            cell.looper()
+               
+        
         
 #-------------------------------------
 # Decision Cell
@@ -128,7 +156,7 @@ class DecisionCell():
 #-------------------------------------
 class Decision():
     # target_data = ([Vs][Dates])
-    def __init__(self, target_name, target_data, decision_col, risk_factor=1):
+    def __init__(self, target_name, target_data=([],[]), decision_col=None, risk_factor=1):
         self.calc = stk.StockCalc()
         self.indicators = []
         self.stop_indicator = ([],[])
@@ -140,6 +168,10 @@ class Decision():
                 
     def __init_indicators__(self):
         pass
+    
+    def post_set(self, sd, decision_col):
+        self.target_data = (sd.Cs, sd.dates)
+        self.decision_col = decision_col
     
     def enter_decision(self, i, col_indicator, stop_value):
         pass
@@ -185,6 +217,7 @@ class Decision():
                         on = True
                 if on:
                     if (self.get_value(i) < stop):
+                        print "STOPED"
                         self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
                         on = False
                     else: 
@@ -193,6 +226,9 @@ class Decision():
                             self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
                             on = False        
                 
+
+            
+
                                                         
 #-------------------------------------
 # Decision Simple SMA
@@ -200,7 +236,7 @@ class Decision():
 # Implementacao do Decision
 #-------------------------------------
 class DecisionSimpleSMA(Decision):
-    def __init__(self, target_name, target_data, decision_col, sma_fast=50, sma_slow=200, stop_per=40):
+    def __init__(self, target_name, target_data=([],[]), decision_col=None, sma_fast=50, sma_slow=200, stop_per=40):
         self.sma_fast = sma_fast
         self.sma_slow = sma_slow
         self.stop_per = stop_per
