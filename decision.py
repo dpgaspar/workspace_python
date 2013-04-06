@@ -1,6 +1,6 @@
 import stock as stk
-import copy
  
+
 
 #-------------------------------------
 # Decision Log Entry
@@ -29,7 +29,7 @@ class PositionCell():
         self.date = date
         self.quantity = quantity
         self.stop_value = stop_value
-        
+       
     def __eq__(self, other):
         if other == self.name: return True
         return False
@@ -56,10 +56,10 @@ class DecisionCollection():
         
     def enter(self, name, value, date, quantity, stop_value=0.0):
         if quantity == -1: quantity = self.get_max_quantity(value)
-        if value*quantity <= self.curr_value: 
+        if value*quantity <= self.curr_value:
             if name in self.positions:
                 position = self.positions[self.positions.index(name)]
-                position.value = (position.value*position.quantity) + (value*quantity)/(position.quantity + quantity) 
+                position.value = (position.value*position.quantity) + (value*quantity)/(position.quantity + quantity)
                 position.quantity = position.quantity + quantity
             else:
                 self.positions.append(PositionCell(name, value, date, quantity, stop_value))
@@ -72,15 +72,22 @@ class DecisionCollection():
         if name in self.positions:
             position = self.positions[self.positions.index(name)]
             if (position.quantity == quantity) or (quantity == -1):
-                quantity = position.quantity 
+                quantity = position.quantity
                 self.positions.pop(self.positions.index(name))
             else:
-                position.value = (position.value*position.quantity) - (value*quantity)/(position.quantity - quantity) 
+                position.value = (position.value*position.quantity) - (value*quantity)/(position.quantity - quantity)
                 position.quantity = position.quantity - quantity
             self.curr_value = self.curr_value + (value*quantity)
-            self.decision_log.append(DecisionLogEntry("LEAVE", PositionCell(name, value, date, quantity, stop_value), self.get_total_value()))            
+            self.decision_log.append(DecisionLogEntry("LEAVE", PositionCell(name, value, date, quantity, stop_value), self.get_total_value()))
             return True
         else: return False
+
+    def get_stop_from_name(self, name):
+        try:
+            position = self.positions[self.positions.index(name)]
+            return position.stop_value
+        except:
+            print self.positions
         
     def get_max_quantity(self, value):
         quantity = round(self.curr_value / value,0)
@@ -103,13 +110,13 @@ class DecisionCollection():
         years = self.get_years()
         if years != 0:
             return ((((self.get_total_value())*100)/self.init_value)-100)/years
-        else: return 0            
+        else: return 0
     
     def __str__(self):
         retstr = "CASH=%f VALUE=%f TOTAL=%f " % (self.curr_value, self.get_value(), self.get_total_value())
-        retstr = retstr + "TOTAL_TRANS=%d " % len(self.decision_log) 
+        retstr = retstr + "TOTAL_TRANS=%d " % len(self.decision_log)
         if len(self.decision_log)>0:
-            retstr = retstr + "YEAR_RATE=%f YEARS=%s " % (self.get_year_rate(),self.get_years())          
+            retstr = retstr + "YEAR_RATE=%f YEARS=%s " % (self.get_year_rate(),self.get_years())
         return retstr
 
 
@@ -138,19 +145,20 @@ class DecisionCollectionStat():
             cell.looper()
                
         
-        
+
 #-------------------------------------
 # Decision Cell
 #
 # Classe tipo celula de dados
-#-------------------------------------        
+#-------------------------------------
 class DecisionCell():
-    def __init__(self, decision=False, quantity=0):
+    def __init__(self, decision=False, quantity=0, stop_value=0.0):
         self.answer = decision
         self.quantity = quantity
-
+        self.stop_value = stop_value
+        
 #-------------------------------------
-# Decision 
+# Decision
 #
 # Classe tipo Interface
 #-------------------------------------
@@ -179,10 +187,18 @@ class Decision():
     def leave_decision(self, i, col_indicator, stop_value):
         pass
     
+    
     def get_quantity_from_stop(self, value, stop_value):
-        quantity = int(round(((self.decision_col.curr_value * self.risk_factor)/(value-stop_value)),0))
-        if (quantity*value > self.decision_col.curr_value): quantity = quantity -1
-        return quantity
+        if (value == stop_value):
+            quantity = round(self.decision_col.curr_value / value,0)
+            if (quantity*value > self.decision_col.curr_value): quantity = quantity -1
+            return quantity
+        else:
+            quantity = (round(((self.decision_col.curr_value * self.risk_factor)/(value-stop_value)),0))
+            if (quantity*value > self.decision_col.curr_value):
+                quantity = round(self.decision_col.curr_value / value,0)
+                if (quantity*value > self.decision_col.curr_value): quantity = quantity -1
+            return quantity
     
     def get_value(self, i): return self.target_data[0][i]
     
@@ -190,14 +206,14 @@ class Decision():
     
     def get_stop_for_date(self, date):
         try:
-            v = self.stop_indicator[self.stop_indicator[1].index(date)]
+            v = self.stop_indicator[0][self.stop_indicator[1].index(date)]
             return v
         except: return 0.0
     
     def get_indicator_for_date(self, date):
         retlst = []
         for ind in self.indicators:
-            try: 
+            try:
                 v = ind[1].index(date)
                 retlst.append(ind[0][v])
             except: return []
@@ -213,22 +229,18 @@ class Decision():
                 if not on:
                     decision = self.enter_decision(i, col_indicator, stop)
                     if (decision.answer):
-                        self.decision_col.enter(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
-                        on = True
+                        if (self.decision_col.enter(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, decision.stop_value)):
+                            on = True                
                 if on:
-                    if (self.get_value(i) < stop):
-                        print "STOPED"
-                        self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
+                    if (self.get_value(i) < self.decision_col.get_stop_from_name(self.target_name)):
+                        self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, decision.stop_value)
                         on = False
-                    else: 
+                    else:
                         decision = self.leave_decision(i, col_indicator, stop)
                         if (decision.answer):
-                            self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, stop)
-                            on = False        
+                            self.decision_col.leave(self.target_name, self.get_value(i), self.get_date(i), decision.quantity, decision.stop_value)
+                            on = False
                 
-
-            
-
                                                         
 #-------------------------------------
 # Decision Simple SMA
@@ -243,7 +255,7 @@ class DecisionSimpleSMA(Decision):
         Decision.__init__(self, target_name, target_data, decision_col)
         
     def __init_indicators__(self):
-        Decision.__init_indicators__(self)        
+        Decision.__init_indicators__(self)
         self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_fast))
         self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_slow))
         self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), self.stop_per))
@@ -260,23 +272,23 @@ class DecisionSimpleSMA(Decision):
 # Decision Simple Stop SMA
 #
 # Implementacao do Decision
-#-------------------------------------        
+#-------------------------------------
 class DecisionSimpleStopSMA(Decision):
     def __init__(self, target_name, target_data, decision_col, risk_factor=1, sma_fast=50, sma_slow=200, stop_per=40):
         self.sma_fast = sma_fast
         self.sma_slow = sma_slow
-        self.stop_per = stop_per        
+        self.stop_per = stop_per
         Decision.__init__(self, target_name, target_data, decision_col, risk_factor)
         
     def __init_indicators__(self):
-        Decision.__init_indicators__(self)        
+        Decision.__init_indicators__(self)
         self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_fast))
         self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_slow))
         self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), self.stop_per))
         
     def enter_decision(self, i, col_indicator, stop_value):
         Decision.enter_decision(self, i, col_indicator, stop_value)
-        return DecisionCell(col_indicator[0] > col_indicator[1], self.get_quantity_from_stop(self.get_value(i), stop_value))
+        return DecisionCell(col_indicator[0] > col_indicator[1], self.get_quantity_from_stop(self.get_value(i), stop_value), stop_value)
         
     def leave_decision(self, i, col_indicator, stop_value):
         Decision.leave_decision(self, i, col_indicator, stop_value)

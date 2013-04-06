@@ -150,7 +150,7 @@ class CLI(cmd.Cmd):
         print ticker, ":", str(port)
     
         port2 = des.DecisionCollection(ticker, 10000)
-        decision2 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port2, risk_factor=0.1)
+        decision2 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port2, risk_factor=0.05, )
         decision2.looper()
         print ticker, ":", str(port2)
         
@@ -165,9 +165,28 @@ class CLI(cmd.Cmd):
             sd.load(ticker, arg)
 
             port = des.DecisionCollection(ticker, 10000)
-            decision = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port, risk_factor=0.1, sma_fast=10, sma_slow=50, stop_per=5)
+            decision = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port, risk_factor=0.02, sma_fast=10, sma_slow=50, stop_per=5)
             decision.looper()
-            print ticker, ":", str(port)
+            
+            port4 = des.DecisionCollection(ticker, 10000)
+            decision4 = des.DecisionSimpleSMA(ticker, (sd.Cs, sd.dates), port4, sma_fast=10, sma_slow=50, stop_per=5)
+            decision4.looper()
+            
+            
+            port2 = des.DecisionCollection(ticker, 10000)
+            decision2 = des.DecisionSimpleSMA(ticker, (sd.Cs, sd.dates), port2)
+            decision2.looper()
+            
+            port3 = des.DecisionCollection(ticker, 10000)
+            decision3 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port3, risk_factor=0.02, sma_fast=50, sma_slow=200, stop_per=40)
+            decision3.looper()
+            
+            
+            
+            print "STOP_FAST - ", ticker, " ", str(port)
+            print "SIMPLE_FAST - ", ticker, " ", str(port4)
+            print "STOP_SLOW - ", ticker, " ", str(port3)
+            print "SIMPLE_SLOW - ", ticker, " ", str(port2)
                                 
     
          
