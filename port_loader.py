@@ -53,9 +53,9 @@ class CLI(cmd.Cmd):
             
  
     def do_cleanup(self, arg):
-        filelist = [ f for f in os.listdir(".") if f.endswith(".dat") ]
+        filelist = [ f for f in os.listdir("./data") if f.endswith(".dat") ]
         for f in filelist:
-            os.remove(f)
+            os.remove("./data/" + f)
  
     def help_cleanup(self):
         print "syntax: cleanup",
@@ -91,7 +91,7 @@ class CLI(cmd.Cmd):
             p = plot.PlotCellIndex(index)
             p.truncate(startdate)
             a_plot.addSimple(plot.PlotCell((p.data,p.dates)))        
-            a_plot.addSimple(plot.PlotCell(calc.sma((p.data,p.dates),10)))
+            a_plot.addSimple(plot.PlotCell(calc.sma((p.data,p.dates),20)))
             a_plot.addSimple(plot.PlotCell(calc.sma((p.data,p.dates),50),overlay=True))
         
         a_plot.plot()
@@ -129,7 +129,13 @@ class CLI(cmd.Cmd):
         a_plot.addSimple(plot.PlotCell( calc.llv((sd.Cs, sd.dates), 100),overlay=True))
 
         a_plot.addSimple(plot.PlotCell( calc.sma((sd.Vs,sd.dates),20 )))
-        a_plot.addSimple(plot.PlotCell( calc.obv((sd.Cs,sd.Vs,sd.dates) )))        
+        
+        arr_obv = calc.obv((sd.Cs,sd.Vs,sd.dates) )
+        a_plot.addSimple(plot.PlotCell( arr_obv))        
+        
+        a_plot.addSimple(plot.PlotCell( calc.sma(arr_obv, 20),overlay=True))
+        a_plot.addSimple(plot.PlotCell( calc.sma(arr_obv, 60),overlay=True))
+        
         
         a_plot.plot()
 
@@ -144,12 +150,12 @@ class CLI(cmd.Cmd):
         sd = stk.StockData()
         sd.load(ticker, startdate)
 
-        port = des.DecisionCollection(ticker, 10000)
+        port = des.DecisionCollection(ticker, 50000)
         decision = des.DecisionSimpleSMA(ticker, (sd.Cs, sd.dates), port)
         decision.looper()
         print ticker, ":", str(port)
     
-        port2 = des.DecisionCollection(ticker, 10000)
+        port2 = des.DecisionCollection(ticker, 50000)
         decision2 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port2, risk_factor=0.05, )
         decision2.looper()
         print ticker, ":", str(port2)
@@ -164,20 +170,20 @@ class CLI(cmd.Cmd):
             sd = stk.StockData()
             sd.load(ticker, arg)
 
-            port = des.DecisionCollection(ticker, 10000)
+            port = des.DecisionCollection(ticker, 50000)
             decision = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port, risk_factor=0.02, sma_fast=10, sma_slow=50, stop_per=5)
             decision.looper()
             
-            port4 = des.DecisionCollection(ticker, 10000)
+            port4 = des.DecisionCollection(ticker, 50000)
             decision4 = des.DecisionSimpleSMA(ticker, (sd.Cs, sd.dates), port4, sma_fast=10, sma_slow=50, stop_per=5)
             decision4.looper()
             
             
-            port2 = des.DecisionCollection(ticker, 10000)
+            port2 = des.DecisionCollection(ticker, 50000)
             decision2 = des.DecisionSimpleSMA(ticker, (sd.Cs, sd.dates), port2)
             decision2.looper()
             
-            port3 = des.DecisionCollection(ticker, 10000)
+            port3 = des.DecisionCollection(ticker, 50000)
             decision3 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port3, risk_factor=0.02, sma_fast=50, sma_slow=200, stop_per=40)
             decision3.looper()
             

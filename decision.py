@@ -262,12 +262,11 @@ class DecisionSimpleSMA(Decision):
         self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_slow))
          
     def enter_decision(self, i):
+        Decision.enter_decision(self, i)
         d = self.get_date(i)
         col_indicator = self.get_indicator_for_date(d) 
-        if (len(col_indicator) == len(self.indicators)):            
-            Decision.enter_decision(self, i)
+        if (len(col_indicator) == len(self.indicators)):                        
             ac_col_flag = (col_indicator[0] > col_indicator[1])
-            print ac_col_flag, self.col_flag
             decision = DecisionCell(ac_col_flag and (not self.col_flag), -1)
             self.col_flag = ac_col_flag            
             return decision
@@ -275,12 +274,14 @@ class DecisionSimpleSMA(Decision):
             return DecisionCell(False, 0, 0) 
        
     def leave_decision(self, i):
+        Decision.leave_decision(self, i)
         d = self.get_date(i)
         col_indicator = self.get_indicator_for_date(d)
         if (len(col_indicator) == len(self.indicators)):            
             ac_col_flag = (col_indicator[0] > col_indicator[1])
             decision = DecisionCell((not ac_col_flag) and self.col_flag, -1)
-            self.col_flag = ac_col_flag            
+            self.col_flag = ac_col_flag
+            return decision            
         else:
             return DecisionCell(False, 0, 0)
         
@@ -294,6 +295,7 @@ class DecisionSimpleStopSMA(Decision):
         self.sma_fast = sma_fast
         self.sma_slow = sma_slow
         self.stop_per = stop_per
+        self.col_flag = True
         Decision.__init__(self, target_name, target_data, decision_col, risk_factor)
         
     def __init_indicators__(self):
@@ -302,21 +304,27 @@ class DecisionSimpleStopSMA(Decision):
         self.indicators.append(self.calc.sma((self.target_data[0], self.target_data[1]), self.sma_slow))
         self.stop_indicator = (self.calc.llv((self.target_data[0], self.target_data[1]), self.stop_per))
         
-    def enter_decision(self, i):        
+    def enter_decision(self, i):
+        Decision.enter_decision(self, i)        
         d = self.get_date(i)
         col_indicator = self.get_indicator_for_date(d)
         if (len(col_indicator) == len(self.indicators)):
-            stop_value = self.get_stop_for_date(d)        
-            Decision.enter_decision(self, i)
-            return DecisionCell(col_indicator[0] > col_indicator[1], self.get_quantity_from_stop(self.get_value(i), stop_value), stop_value)
+            ac_col_flag = (col_indicator[0] > col_indicator[1])
+            stop_value = self.get_stop_for_date(d)
+            decision = DecisionCell(ac_col_flag and (not self.col_flag), self.get_quantity_from_stop(self.get_value(i), stop_value), stop_value)        
+            self.col_flag = ac_col_flag
+            return decision 
         else:
             return DecisionCell(False, 0, 0)
     def leave_decision(self, i):
+        Decision.leave_decision(self, i)
         d = self.get_date(i)
         col_indicator = self.get_indicator_for_date(d)        
         if (len(col_indicator) == len(self.indicators)):        
-            Decision.leave_decision(self, i)
-            return DecisionCell(col_indicator[0] < col_indicator[1], -1)
+            ac_col_flag = (col_indicator[0] > col_indicator[1])
+            decision = DecisionCell(col_indicator[0] < col_indicator[1], -1)
+            self.col_flag = ac_col_flag
+            return decision
         else:
             return DecisionCell(False, 0, 0)
         
