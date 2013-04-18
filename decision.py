@@ -9,10 +9,11 @@ import stock as stk
 # guarda um log das decisoes
 #-------------------------------------
 class DecisionLogEntry():
-    def __init__(self, decision_type, poscell, total_value):
+    def __init__(self, decision_type, poscell, total_value, ptr_poscell=None):
         self.decision_type = decision_type
         self.poscell = poscell
         self.total_value = total_value
+        self.ptr_poscell = ptr_poscell
         
     def __str__(self):
         return "%s:%s: %f %d Quantity=%d" % (self.decision_type, self.poscell.name, self.poscell.value, self.poscell.date, self.quantity)
@@ -73,7 +74,9 @@ class DecisionCollection():
             position = self.positions[self.positions.index(name)]
             if (position.quantity == quantity) or (quantity == -1):
                 quantity = position.quantity
-                self.positions.pop(self.positions.index(name))
+                i = self.positions.index(name)
+                buy_date = self.positions[i].date
+                self.positions.pop(i)
             else:
                 position.value = (position.value*position.quantity) - (value*quantity)/(position.quantity - quantity)
                 position.quantity = position.quantity - quantity

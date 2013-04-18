@@ -176,8 +176,7 @@ class CLI(cmd.Cmd):
             
             port4 = des.DecisionCollection(ticker, 50000)
             decision4 = des.DecisionSimpleSMA(ticker, (sd.Cs, sd.dates), port4, sma_fast=10, sma_slow=50, stop_per=5)
-            decision4.looper()
-            
+            decision4.looper()            
             
             port2 = des.DecisionCollection(ticker, 50000)
             decision2 = des.DecisionSimpleSMA(ticker, (sd.Cs, sd.dates), port2)
@@ -185,9 +184,7 @@ class CLI(cmd.Cmd):
             
             port3 = des.DecisionCollection(ticker, 50000)
             decision3 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port3, risk_factor=0.02, sma_fast=50, sma_slow=200, stop_per=40)
-            decision3.looper()
-            
-            
+            decision3.looper()                        
             
             print "STOP_FAST - ", ticker, " ", str(port)
             print "SIMPLE_FAST - ", ticker, " ", str(port4)
