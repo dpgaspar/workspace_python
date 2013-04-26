@@ -147,6 +147,7 @@ class CLI(cmd.Cmd):
     
     def do_simulation(self, arg):
         ticker, startdate = arg.split()
+        calc = stk.StockCalcIndex(self.stk_data_coll)
         sd = stk.StockData()
         sd.load(ticker, startdate)
 
@@ -156,9 +157,22 @@ class CLI(cmd.Cmd):
         print ticker, ":", str(port)
     
         port2 = des.DecisionCollection(ticker, 50000)
-        decision2 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port2, risk_factor=0.05, )
+        decision2 = des.DecisionSimpleStopSMA(ticker, (sd.Cs, sd.dates), port2, risk_factor=0.01, )
         decision2.looper()
         print ticker, ":", str(port2)
+        port2.print_all()
+        
+        a_plot = plot.Plot(plot.PlotCell((sd.Cs,sd.dates)))
+        
+        a_plot.addSimple(plot.PlotCell( calc.sma((sd.Cs, sd.dates), 200),overlay=True))
+        a_plot.addSimple(plot.PlotCell( calc.sma((sd.Cs, sd.dates), 50),overlay=True))
+        a_plot.addSimple(plot.PlotCell( calc.llv((sd.Cs, sd.dates), 100),overlay=True))
+
+        a_plot.addSimple(plot.PlotCell( port2.get_enter_plot_cell(), overlay=True, color='go' ))
+        a_plot.addSimple(plot.PlotCell( port2.get_leave_plot_cell(), overlay=True, color='ro' ))
+        
+        a_plot.addSimple(plot.PlotCell( port2.get_value_plot_cell()))
+        a_plot.plot()
         
     def help_simulation(self):
         print "syntax: simulation [ticker] []|[start date YYYYMMDD]",

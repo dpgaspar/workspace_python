@@ -16,7 +16,7 @@ class DecisionLogEntry():
         self.ptr_poscell = ptr_poscell
         
     def __str__(self):
-        return "%s:%s: %f %d Quantity=%d" % (self.decision_type, self.poscell.name, self.poscell.value, self.poscell.date, self.quantity)
+        return "%s: %s" % (self.decision_type, self.poscell)
 
 #-------------------------------------
 # Position Cell
@@ -37,9 +37,9 @@ class PositionCell():
     
     def __ne__(self, other):
         if other != self.name: return True
-        return False
+        return False    
     
-    def __str__(self): return self.name + " V=" + str(self.value) + " D=" + str(self.date) + " Q=" + str(self.quantity)
+    def __str__(self): return self.name + " V=" + str(self.value) + " D=" + str(self.date) + " Q=" + str(self.quantity) + " STOP=" + str(self.stop_value)
 
 
 #-------------------------------------
@@ -74,14 +74,19 @@ class DecisionCollection():
             position = self.positions[self.positions.index(name)]
             if (position.quantity == quantity) or (quantity == -1):
                 quantity = position.quantity
-                i = self.positions.index(name)
+                i = self.positions.index(name)                
                 buy_date = self.positions[i].date
                 self.positions.pop(i)
             else:
                 position.value = (position.value*position.quantity) - (value*quantity)/(position.quantity - quantity)
                 position.quantity = position.quantity - quantity
+                
+            j = 0
+            for i in range(len(self.decision_log)):
+                if self.decision_log[i].poscell.date == buy_date: j = i
+                
             self.curr_value = self.curr_value + (value*quantity)
-            self.decision_log.append(DecisionLogEntry("LEAVE", PositionCell(name, value, date, quantity, stop_value), self.get_total_value()))
+            self.decision_log.append(DecisionLogEntry("LEAVE", PositionCell(name, value, date, quantity, stop_value), self.get_total_value(), j))
             return True
         else: return False
 
@@ -115,13 +120,60 @@ class DecisionCollection():
             return ((((self.get_total_value())*100)/self.init_value)-100)/years
         else: return 0
     
+    def get_worst(self):
+        worst = 0.0
+        for descell in self.decision_log:        
+            if (descell.decision_type == "LEAVE"):
+                des_enter = self.decision_log[descell.ptr_poscell]
+                res = (descell.poscell.quantity*descell.poscell.value) - (des_enter.poscell.quantity*des_enter.poscell.value)
+                if (worst > res) or (worst ==0): worst = res
+        return worst
+    
+    def get_best(self):
+        worst = 0.0
+        for descell in self.decision_log:        
+            if (descell.decision_type == "LEAVE"):
+                des_enter = self.decision_log[descell.ptr_poscell]
+                res = (descell.poscell.quantity*descell.poscell.value) - (des_enter.poscell.quantity*des_enter.poscell.value)
+                if (worst < res) or (worst ==0): worst = res
+        return worst
+    
+    def get_enter_plot_cell(self):
+        pc = ([],[])
+        for p in self.decision_log:
+            if p.decision_type == "ENTER":
+                pc[0].append(p.poscell.value)
+                pc[1].append(p.poscell.date)
+        return pc
+    
+    def get_leave_plot_cell(self):
+        pc = ([],[])
+        for p in self.decision_log:
+            if p.decision_type == "LEAVE":
+                pc[0].append(p.poscell.value)
+                pc[1].append(p.poscell.date)
+        return pc
+    
+    def get_value_plot_cell(self):
+        pc = ([],[])
+        for p in self.decision_log:
+            pc[0].append(p.total_value)
+            pc[1].append(p.poscell.date)
+        return pc
+    
+    
     def __str__(self):
         retstr = "CASH=%f VALUE=%f TOTAL=%f " % (self.curr_value, self.get_value(), self.get_total_value())
         retstr = retstr + "TOTAL_TRANS=%d " % len(self.decision_log)
         if len(self.decision_log)>0:
             retstr = retstr + "YEAR_RATE=%f YEARS=%s " % (self.get_year_rate(),self.get_years())
+            retstr = retstr + " WORST=%s BEST=%s" % (self.get_worst(), self.get_best())
         return retstr
 
+    def print_all(self):
+        for cell in self.decision_log:
+            print cell
+            
 
 class DecisionCollectionStat():
     def __init__(self):
@@ -294,7 +346,7 @@ class DecisionSimpleSMA(Decision):
 # Implementacao do Decision
 #-------------------------------------
 class DecisionSimpleStopSMA(Decision):
-    def __init__(self, target_name, target_data, decision_col, risk_factor=1, sma_fast=50, sma_slow=200, stop_per=40):
+    def __init__(self, target_name, target_data, decision_col, risk_factor=1, sma_fast=50, sma_slow=200, stop_per=100):
         self.sma_fast = sma_fast
         self.sma_slow = sma_slow
         self.stop_per = stop_per
